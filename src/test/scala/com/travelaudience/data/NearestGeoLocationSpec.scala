@@ -6,14 +6,14 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions.col
 import org.scalatest.funspec.AnyFunSpec
 
-import java.util
+import java.util.{List as JavaList}
 import scala.collection.JavaConverters._
 
 class NearestGeoLocationSpec extends AnyFunSpec with MainSpec {
 
   describe("a successful run") {
 
-    val usersGeo: util.List[Row] = Seq(
+    val usersGeo: JavaList[Row] = Seq(
       Row("DDEFEBEA-98ED-49EB-A4E7-9D7BFDB7AA0B", -37.83330154418945, 145.0500030517578),
       Row("DAEF2221-14BE-467B-894A-F101CDCC38E4", 52.51670074462891, 4.666699886322021),
       Row("31971B3E-2F80-4F8D-86BA-1F2077DF36A2", 35.68500137329102, 139.7514038085938)
@@ -33,7 +33,7 @@ class NearestGeoLocationSpec extends AnyFunSpec with MainSpec {
 
   describe("finding nearest airport") {
 
-    val usersGeo: util.List[Row] = Seq(
+    val usersGeo: JavaList[Row] = Seq(
       Row("31971B3E-2F80-4F8D-86BA-1F2077DF36A2", 35.68500137329102, 139.7514038085938)
     ).asJava
 

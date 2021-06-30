@@ -4,7 +4,7 @@ import com.travelaudience.data.models.{OptdAirport, UserGeoLocation}
 import com.travelaudience.data.utils.SparkUtils.{createSparkSession, getSchema, readCSV}
 import org.apache.spark.sql.{DataFrame, Encoder, Encoders, Row, SparkSession}
 
-import java.util
+import java.util.{List as JavaList}
 import scala.util.Success
 
 trait MainSpec {
@@ -15,7 +15,7 @@ trait MainSpec {
 
   val optdAirportsDf: DataFrame = readCSV[OptdAirport](file = "src/test/resources/inputs/optd-airports.csv")
 
-  def programRunner(usersGeo: util.List[Row]): DataFrame = {
+  def programRunner(usersGeo: JavaList[Row]): DataFrame = {
     val usersGeoDf: DataFrame = sparkSession.createDataFrame(usersGeo, getSchema[UserGeoLocation])
 
     val geoLocations =
