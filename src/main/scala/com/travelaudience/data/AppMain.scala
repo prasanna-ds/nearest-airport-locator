@@ -11,18 +11,18 @@ import scala.util.{Failure, Success}
 object AppMain extends LazyLogging {
 
   implicit val optdAirportEncoder: Encoder[OptdAirport] = Encoders.product[OptdAirport]
-  implicit val userGeoEncoder: Encoder[UserGeoLocation]  = Encoders.product[UserGeoLocation]
+  implicit val userGeoEncoder: Encoder[UserGeoLocation] = Encoders.product[UserGeoLocation]
+  implicit val sparkSession: SparkSession               = createSparkSession
 
   def main(args: Array[String]): Unit = {
 
     val usage =
       """
-      Usage: find-nearby-airport.jar [--input-files inputFiles] [--application-name appName] [--output-file outputFile]
+      Usage: find-nearby-airport.jar [--input-files inputFiles] [--output-file outputFile]
       """
 
     val defaultOptions: Map[String, Any] = Map(
-      "appName"    -> "",
-      "inputFiles" -> 0,
+      "inputFiles" -> "",
       "outputFile" -> ""
     )
 
@@ -30,8 +30,6 @@ object AppMain extends LazyLogging {
     def parseArgs(list: List[String], options: Map[String, Any]): Map[String, Any] = {
       list match {
         case Nil => options
-        case "--application-name" :: value :: tail =>
-          parseArgs(tail, options ++ Map("appName" -> value))
         case "--input-files" :: value :: tail =>
           parseArgs(tail, options ++ Map("inputFiles" -> value))
         case "--output-file" :: value :: tail =>
@@ -45,36 +43,20 @@ object AppMain extends LazyLogging {
 
     val options = parseArgs(args.toList, defaultOptions)
 
-    val appName: String           = options("appName").asInstanceOf[String]
     val inputFiles: Array[String] = options("inputFiles").asInstanceOf[String].split(",")
     val airportsOPTD: String      = inputFiles.head
     val usersGEO: String          = inputFiles(1)
     val outputFile: String        = options("outputFile").asInstanceOf[String]
 
-    val sparkSession: SparkSession = createSparkSession(appName)
-
-    val optdAirportsDf = readCSV[OptdAirport](
-      sparkSession,
-      file = airportsOPTD,
-      header = "true",
-      delimiter = ","
-    )
-
-    val usersGeoDf = readCSV[UserGeoLocation](
-      sparkSession,
-      file = usersGEO,
-      header = "true",
-      delimiter = ","
-    )
+    val optdAirportsDf = readCSV[OptdAirport](file = airportsOPTD)
+    val usersGeoDf     = readCSV[UserGeoLocation](file = usersGEO)
 
     val geoLocations = new NearestGeoLocation(sparkSession, optdAirportsDf, usersGeoDf.repartition(10))
     geoLocations.findNearestCoordinates() match {
       case Success(nearByAirportDf) =>
         writeCSV(
           nearByAirportDf,
-          outputFile,
-          header = "true",
-          delimiter = ","
+          outputFile
         )
       case Failure(exception) =>
         logger.error(s"Nth Degree calculation failed with exception ${exception.getMessage}")

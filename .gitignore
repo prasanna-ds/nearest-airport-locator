@@ -1,22 +1,28 @@
-logs
-project/project
-project/target
-target
-tmp
+### SBT ###
+# Simple Build Tool
+# http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
+
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
 .history
-dist
-/.idea
-/*.iml
-/out
-/.idea_modules
-/.classpath
-/.project
-/RUNNING_PID
-/.settings
-ensime.sbt
-.ensime
-.ensime_cache/
+.cache
+.lib/
+.bsp
+.semanticgraphs
+.bloop
+
+### Scala ###
+*.class
+*.log
+
+# Editors
+.vscode/
+.idea/
+.metals/
+
+### Mac/OSX ###
 .DS_Store
-src/test/scala/.DS_STORE
-src/test/scala/com/.DS_STORE
-src/test/scala/com/freenow/.DS_STORE

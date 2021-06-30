@@ -6,42 +6,52 @@ import org.apache.spark.sql.{DataFrame, Encoder, SaveMode, SparkSession}
 
 import scala.reflect.runtime.universe.TypeTag
 
-
 object SparkUtils {
+
+  val APP_NAME = "nearest-airport-finder"
 
   /**
    * Create Spark Session
    * @return Spark Session
    */
-  def createSparkSession(appName: String): SparkSession = {
-    SparkSession
+  val createSparkSession: SparkSession = {
+   val sparkSession=  SparkSession
       .builder()
-      .appName(appName)
+      .appName(APP_NAME)
       .master("local[*]")
       .getOrCreate()
+
+    val hadoopConfig = sparkSession.sparkContext.hadoopConfiguration
+    hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
+    hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
+
+    sparkSession
   }
 
   /**
    * Read File and create dataframe
-   * @param sparkSession Spark Session.
    * @param file Input File with location.
    * @param header Has header. "true" or "false"
    * @param delimiter Type of delimiter. "," or "\t"
    * @return Dataframe.
    */
-  def readCSV[T: Encoder: TypeTag](
-      sparkSession: SparkSession,
-      file: String,
-      header: String,
-      delimiter: String,
+  def readCSV[T: Encoder: TypeTag](file: String, header: String = "true", delimiter: String = ",")(implicit
+      spark: SparkSession
   ): DataFrame = {
-    sparkSession.read
+    spark.read
       .format("csv")
       .option("delimiter", delimiter)
       .option("inferSchema", "false")
       .option("header", header)
       .schema(getSchema[T])
       .load(file)
+  }
+
+  def getSchema[T: TypeTag]: StructType = {
+    ScalaReflection
+      .schemaFor[T]
+      .dataType
+      .asInstanceOf[StructType]
   }
 
   /**
@@ -51,9 +61,8 @@ object SparkUtils {
    * @param header Header to be written or not. "true" or "false"
    * @param delimiter Type of delimiter. "," or "\t"
    */
-  def writeCSV(dataFrame: DataFrame, outputLocation: String, header: String, delimiter: String): Unit = {
-    dataFrame
-      .write
+  def writeCSV(dataFrame: DataFrame, outputLocation: String, header: String = "true", delimiter: String = ","): Unit = {
+    dataFrame.write
       .format("csv")
       .mode(SaveMode.Overwrite)
       .option("header", header)
@@ -62,11 +71,8 @@ object SparkUtils {
       .save(outputLocation)
   }
 
-
-  def getSchema[T: TypeTag]: StructType = {
-    ScalaReflection
-      .schemaFor[T]
-      .dataType
-      .asInstanceOf[StructType]
+  def shutdown(sparkSession: SparkSession): Unit = {
+    sparkSession.stop()
   }
+
 }
