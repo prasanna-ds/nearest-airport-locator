@@ -1,8 +1,11 @@
 package com.travelaudience.data.utils
 
-import org.apache.spark.sql.functions.{col, size}
+import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, Encoder, SaveMode, SparkSession}
+
+import scala.reflect.runtime.universe.TypeTag
+
 
 object SparkUtils {
 
@@ -10,36 +13,34 @@ object SparkUtils {
    * Create Spark Session
    * @return Spark Session
    */
-  lazy val sparkSession: String => SparkSession = (appName: String) => {
-      SparkSession
+  def createSparkSession(appName: String): SparkSession = {
+    SparkSession
       .builder()
       .appName(appName)
       .master("local[*]")
       .getOrCreate()
-
   }
 
   /**
    * Read File and create dataframe
    * @param sparkSession Spark Session.
    * @param file Input File with location.
-   * @param header Header to be written or not. "true" or "false"
+   * @param header Has header. "true" or "false"
    * @param delimiter Type of delimiter. "," or "\t"
-   * @param schema Schema of the file.
    * @return Dataframe.
    */
-  def readCSV(
-      sparkSession: SparkSession = sparkSession,
+  def readCSV[T: Encoder: TypeTag](
+      sparkSession: SparkSession,
       file: String,
       header: String,
       delimiter: String,
-      schema: StructType
   ): DataFrame = {
     sparkSession.read
       .format("csv")
       .option("delimiter", delimiter)
+      .option("inferSchema", "false")
       .option("header", header)
-      .schema(schema)
+      .schema(getSchema[T])
       .load(file)
   }
 
@@ -52,15 +53,20 @@ object SparkUtils {
    */
   def writeCSV(dataFrame: DataFrame, outputLocation: String, header: String, delimiter: String): Unit = {
     dataFrame
-    // setting repartition as 1 as this is an exercise, but it will be an expensive operation if there is a lot of data.
-    // If we do not change the number of partitions, there will be multiple files, but data in each file will be sorted
-      //.coalesce(1)
       .write
       .format("csv")
+      .mode(SaveMode.Overwrite)
       .option("header", header)
       .option("delimiter", delimiter)
       .option("quote", "\u0000")
       .save(outputLocation)
   }
 
+
+  def getSchema[T: TypeTag]: StructType = {
+    ScalaReflection
+      .schemaFor[T]
+      .dataType
+      .asInstanceOf[StructType]
+  }
 }
