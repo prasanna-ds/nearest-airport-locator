@@ -28,7 +28,6 @@ object AppMain extends LazyLogging {
 
     @tailrec
     def parseArgs(list: List[String], options: Map[String, Any]): Map[String, Any] = {
-      logger.info("Parsing input arguments...")
       list match {
         case Nil => options
         case "--input-files" :: value :: tail =>
@@ -42,6 +41,7 @@ object AppMain extends LazyLogging {
       }
     }
 
+    logger.info("Parsing input arguments...")
     val options = parseArgs(args.toList, defaultOptions)
 
     val inputFiles: Array[String] = options("inputFiles").asInstanceOf[String].split(",")
