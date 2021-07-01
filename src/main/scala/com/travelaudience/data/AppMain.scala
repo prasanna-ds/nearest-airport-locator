@@ -18,7 +18,7 @@ object AppMain extends LazyLogging {
 
     val usage =
       """
-      Usage: find-nearby-airport.jar [--input-files inputFiles] [--output-file outputFile]
+      Usage: nearest-airport-locator.jar [--input-files inputFiles] [--output-file outputFile]
       """
 
     val defaultOptions: Map[String, Any] = Map(
