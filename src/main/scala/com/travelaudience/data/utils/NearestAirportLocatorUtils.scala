@@ -2,9 +2,15 @@ package com.travelaudience.data.utils
 
 import com.travelaudience.data.models.LocationCoordinate
 
-object AppUtils {
+object NearestAirportLocatorUtils {
   val RADIUS_OF_EARTH_IN_KM = 6371
 
+  /**
+   * Haversine formula to calculate the distance between two geographical points.
+   * @param userCoordinate Coordinates of a User
+   * @param masterCoordinate Coordinates of a Airport
+   * @return
+   */
   def calculateDistanceInKilometer(
       userCoordinate: LocationCoordinate,
       masterCoordinate: LocationCoordinate
@@ -17,8 +23,8 @@ object AppUtils {
       (Math.cos(Math.toRadians(userCoordinate.latitude)) *
         Math.cos(Math.toRadians(masterCoordinate.latitude)) *
         sinLng * sinLng)
-    val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    (RADIUS_OF_EARTH_IN_KM * c).toInt
+    val b = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    (RADIUS_OF_EARTH_IN_KM * b).toInt
   }
 
 }

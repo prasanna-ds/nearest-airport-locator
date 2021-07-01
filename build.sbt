@@ -1,9 +1,9 @@
-name := "nearest-airport-finder"
+name := "nearest-airport-locator"
 organization := "com.travelaudience.data"
 version := "1.0"
 scalaVersion := "2.12.10"
 resolvers += Resolver.mavenLocal
-inThisBuild(List(assemblyJarName in assembly := "nearest-airport-finder.jar"))
+inThisBuild(List(assemblyJarName in assembly := "nearest-airport-locator.jar"))
 libraryDependencies ++= {
   sys.props += "packaging.type" -> "jar"
   Seq(

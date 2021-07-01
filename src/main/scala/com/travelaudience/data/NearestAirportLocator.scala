@@ -11,42 +11,45 @@ import org.apache.spark.sql.types.DoubleType
 
 import scala.util.{Failure, Success, Try}
 
-class NearestGeoLocation(spark: SparkSession, masterCoordinatesDf: DataFrame, userCoordinatesDf: DataFrame)
+class NearestAirportLocator(masterCoordinatesDf: DataFrame, userCoordinatesDf: DataFrame)(implicit spark: SparkSession)
     extends Serializable
     with LazyLogging {
 
   private implicit val locationEncoder: Encoder[LocationCoordinate] = Encoders.product[LocationCoordinate]
 
-  def findNearestCoordinates(): Try[DataFrame] = {
+  def findNearestAirport(): Try[DataFrame] = {
 
     try {
-      val masterCoordinates: Broadcast[List[LocationCoordinate]] = broadcastMasterCoordinates(masterCoordinatesDf)
+      val airportCoordinates: Broadcast[List[LocationCoordinate]] = broadcastAirportCoordinates(masterCoordinatesDf)
 
-      val nearByAirportDf = userCoordinatesDf
+      logger.info("Starting to find the nearest airport...")
+      val nearestAirportsDf = userCoordinatesDf
         .withColumn(
           "nearbyAirport",
-          locationMapper(typedLit(masterCoordinates.value), col("uuid"), col("geoip_latitude"), col("geoip_longitude"))
+          locationMapper(typedLit(airportCoordinates.value), col("uuid"), col("geoip_latitude"), col("geoip_longitude"))
         )
         .select(col("uuid"), col("nearbyAirport.id"))
         .withColumnRenamed("id", "iata_code")
 
-      Success(nearByAirportDf)
+      Success(nearestAirportsDf)
     } catch {
       case exception: Exception =>
-        logger.error(s"exception: $exception")
+        logger.error(s"Exception while finding the nearest airport: $exception")
+        logger.warn("Shutting down spark context...")
         shutdown(spark)
         Failure(exception)
     }
   }
 
-  private def broadcastMasterCoordinates(masterCoordinatesDf: DataFrame): Broadcast[List[LocationCoordinate]] = {
+  private def broadcastAirportCoordinates(airportCoordinatesDf: DataFrame): Broadcast[List[LocationCoordinate]] = {
 
-    val broadcastVariable = masterCoordinatesDf
+    logger.info("Broadcasting the Coordinates of Airports...")
+    val broadcastVariable = airportCoordinatesDf
       .withColumn("lat", col("latitude").cast(DoubleType))
       .withColumn("long", col("longitude").cast(DoubleType))
       .drop("latitude,longitude")
-      .filter(col("lat")  > -90.0 && col("lat") < 90.0)
-      .filter(col("long")  > -180.0 && col("long") < 180.0)
+      .filter(col("lat")  > -90.0 && col("lat") < 90.0) // filtering invalid latitudes
+      .filter(col("long")  > -180.0 && col("long") < 180.0) // filtering invalid longitudes
       .coalesce(numPartitions = 1)
       .sort(col("lat").asc, col("long").asc)
       .map { row: Row =>

@@ -2,9 +2,9 @@ package com.travelaudience.data
 
 import com.travelaudience.data.models.{OptdAirport, UserGeoLocation}
 import com.travelaudience.data.utils.SparkUtils.{createSparkSession, getSchema, readCSV}
-import org.apache.spark.sql.{DataFrame, Encoder, Encoders, Row, SparkSession}
+import org.apache.spark.sql._
 
-import java.util.{List as JavaList}
+import java.util.{List => JavaList}
 import scala.util.Success
 
 trait MainSpec {
@@ -14,14 +14,18 @@ trait MainSpec {
   implicit val sparkSession: SparkSession               = createSparkSession
 
   val optdAirportsDf: DataFrame = readCSV[OptdAirport](file = "src/test/resources/inputs/optd-airports.csv")
+  var usersGeoDf: DataFrame     = readCSV[UserGeoLocation](file = "src/test/resources/inputs/user-geo.csv")
 
-  def programRunner(usersGeo: JavaList[Row]): DataFrame = {
-    val usersGeoDf: DataFrame = sparkSession.createDataFrame(usersGeo, getSchema[UserGeoLocation])
+  def codeRunner(usersGeo: Option[JavaList[Row]]): DataFrame = {
+
+    if(usersGeo.nonEmpty) {
+      usersGeoDf = sparkSession.createDataFrame(usersGeo.get, getSchema[UserGeoLocation])
+    }
 
     val geoLocations =
-      new NearestGeoLocation(sparkSession, optdAirportsDf, usersGeoDf)
+      new NearestAirportLocator(sparkSession, optdAirportsDf, usersGeoDf)
 
-    val nearestAirportDf = geoLocations.findNearestCoordinates() match {
+    val nearestAirportDf = geoLocations.findNearestAirport() match {
       case Success(nearestAirportDf) =>
         Right(nearestAirportDf).value
     }

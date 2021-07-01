@@ -28,6 +28,7 @@ object AppMain extends LazyLogging {
 
     @tailrec
     def parseArgs(list: List[String], options: Map[String, Any]): Map[String, Any] = {
+      logger.info("Parsing input arguments...")
       list match {
         case Nil => options
         case "--input-files" :: value :: tail =>
@@ -35,8 +36,8 @@ object AppMain extends LazyLogging {
         case "--output-file" :: value :: tail =>
           parseArgs(tail, options ++ Map("outputFile" -> value))
         case option :: _ =>
-          println("Unknown option " + option)
-          println(usage)
+          logger.error("Unknown option " + option)
+          logger.info(usage)
           sys.exit(1)
       }
     }
@@ -48,14 +49,19 @@ object AppMain extends LazyLogging {
     val usersGEO: String          = inputFiles(1)
     val outputFile: String        = options("outputFile").asInstanceOf[String]
 
+    logger.info("Reading the coordinates of airports...")
     val optdAirportsDf = readCSV[OptdAirport](file = airportsOPTD)
-    val usersGeoDf     = readCSV[UserGeoLocation](file = usersGEO)
 
-    val geoLocations = new NearestGeoLocation(sparkSession, optdAirportsDf, usersGeoDf.repartition(10))
-    geoLocations.findNearestCoordinates() match {
-      case Success(nearByAirportDf) =>
+    logger.info("Reading the user's coordinates...")
+    val usersGeoDf =
+      readCSV[UserGeoLocation](file = usersGEO)
+        .repartition(10) // For production, it has to chosen based on the actual file size and trial and error method
+
+    val nearestAirportLocator = new NearestAirportLocator(optdAirportsDf, usersGeoDf)
+    nearestAirportLocator.findNearestAirport() match {
+      case Success(nearestAirportsDf) =>
         writeCSV(
-          nearByAirportDf,
+          nearestAirportsDf,
           outputFile
         )
       case Failure(exception) =>
