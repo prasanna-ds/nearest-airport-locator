@@ -65,7 +65,7 @@ object AppMain extends LazyLogging {
           outputFile
         )
       case Failure(exception) =>
-        logger.error(s"Nth Degree calculation failed with exception ${exception.getMessage}")
+        logger.error(s"Nearest airport search failed with exception ${exception.getMessage}")
         sys.exit(1)
     }
 
