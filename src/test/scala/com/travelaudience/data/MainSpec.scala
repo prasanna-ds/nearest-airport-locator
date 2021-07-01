@@ -22,8 +22,7 @@ trait MainSpec {
       usersGeoDf = sparkSession.createDataFrame(usersGeo.get, getSchema[UserGeoLocation])
     }
 
-    val geoLocations =
-      new NearestAirportLocator(sparkSession, optdAirportsDf, usersGeoDf)
+    val geoLocations = new NearestAirportLocator(optdAirportsDf, usersGeoDf)
 
     val nearestAirportDf = geoLocations.findNearestAirport() match {
       case Success(nearestAirportDf) =>
